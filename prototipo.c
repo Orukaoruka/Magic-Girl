@@ -22,11 +22,12 @@ int main()
   player player;
 
   //FPS
-  ALLEGRO_TIMER *timer = al_create_timer(1.0 / 45.0);
+  ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
   //Cola de eventos
   ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-  //Imagen del menu
-  ALLEGRO_BITMAP *background = al_load_bitmap("HasturPlushie.jpeg");
+  //Imagen del menu. Sprite holder
+  ALLEGRO_BITMAP *background = al_load_bitmap("GatoMenu.jpeg");
+  ALLEGRO_BITMAP *player_sprite = al_load_bitmap("kitty.png");
   //Font
   ALLEGRO_FONT *font = al_load_ttf_font("BoldPixels.ttf",48,0);
   //Variable tipo evento
@@ -59,7 +60,7 @@ int main()
     //Función redibujo.
     
     if(redraw == 1 && al_is_event_queue_empty(queue)){
-      dibujar_mapa(mapa,player);   
+      dibujar_mapa(player_sprite,mapa,player);   
       al_flip_display();
       redraw = 0;
     }
@@ -73,6 +74,6 @@ int main()
 
   // Fin del programa
   shutdown_game(disp,timer,queue,font,background);
-  
+  al_destroy_bitmap(player_sprite);
   return 0;
 }

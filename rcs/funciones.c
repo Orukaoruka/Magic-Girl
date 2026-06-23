@@ -8,24 +8,31 @@
 
 
 
-void dibujar_mapa(mapa mapa[FIL][COL], player player)
+void dibujar_mapa(ALLEGRO_BITMAP *player_sprite, mapa mapa[FIL][COL], player player)
 {
   int i,j;
   ALLEGRO_COLOR RIGHT_UI = al_map_rgb(0,0,0);
-
+  printf("\n%d\t\n%d",player.iposicion_player/PIXEL,player.jposicion_player/PIXEL);
   al_clear_to_color(al_map_rgb(153, 193, 241));    
   for(i = 0; i < FIL; i++)
   {
     for(j = 0; j < COL; j++)
     {
+      al_draw_rectangle(j*PIXEL, i*PIXEL, (j+1)*PIXEL, (i+1)*PIXEL,al_map_rgb(255,255,0),0);
       if(mapa[i][j].mapa_char == 'm')
       {
         al_draw_filled_rectangle(j*PIXEL, i*PIXEL, (j+1)*PIXEL, (i+1)*PIXEL,RIGHT_UI);
       }
+
+      if(mapa[i][j].mapa_char == 's')
+      {
+        al_draw_filled_rectangle(j*PIXEL, i*PIXEL, (j+1)*PIXEL, (i+1)*PIXEL,al_map_rgb(255,0,0));
+      }
     }
   }
    //Cuadrado
-  al_draw_filled_rectangle(player.jposicion_player*PIXEL, player.iposicion_player*PIXEL, (player.jposicion_player+1)*PIXEL, (player.iposicion_player+1)*PIXEL, al_map_rgb(200, 0, 198)); 
+  al_draw_rectangle(player.jposicion_player, player.iposicion_player, player.jposicion_player+PIXEL, player.iposicion_player+PIXEL, al_map_rgb(200, 0, 198),0); 
+  al_draw_bitmap(player_sprite, player.jposicion_player, player.iposicion_player, 0);
 
   return;
 }
@@ -102,31 +109,52 @@ int movimiento_jugador(mapa mapa[FIL][COL],player *player,ALLEGRO_EVENT_QUEUE *q
   //Espera por un evento que este localizado dentro de la cola (prioridad en orden de llegada)
   al_wait_for_event(queue, &event);
 
-  //event es un tipo de estructura de allegro. != para colisiones (temporalmente)
   switch(event.type)
   {
     case ALLEGRO_EVENT_TIMER:
     
       al_get_keyboard_state(&ks);
-      //Arreglar aqi movimiento
 
-          if(al_key_down(&ks, ALLEGRO_KEY_UP) && mapa[(player->iposicion_player)-1][(player->jposicion_player)].mapa_binario != 1){
-            player->iposicion_player--;
+
+          if(al_key_down(&ks, ALLEGRO_KEY_UP) /* && 
+          mapa[(player->iposicion_player/PIXEL)-1][(player->jposicion_player/PIXEL)].mapa_binario != 1*/)
+          {
+            if(mapa[(player->iposicion_player/PIXEL)-1][(player->jposicion_player/PIXEL)].mapa_binario != 1)
+                player->iposicion_player-=PASO;
+            else if(mapa[(player->iposicion_player/PIXEL)-1][(player->jposicion_player/PIXEL)].mapa_binario == 1)
+              if(colision(player->jposicion_player,player->iposicion_player-PASO,player->jposicion_player,player->iposicion_player-1) != 1)
+                player->iposicion_player-=PASO;
+
           }
  
-          if(al_key_down(&ks, ALLEGRO_KEY_DOWN) && mapa[(player->iposicion_player)+1][(player->jposicion_player)].mapa_binario != 1){
-            player->iposicion_player++;
+          if(al_key_down(&ks, ALLEGRO_KEY_DOWN))
+          {
+            if(mapa[(player->iposicion_player/PIXEL)+1][(player->jposicion_player/PIXEL)].mapa_binario != 1)
+              player->iposicion_player+=PASO;
+            else
+              if(colision(player->jposicion_player,player->iposicion_player+PASO,player->jposicion_player,player->iposicion_player+1) != 1)
+                 player->iposicion_player+=PASO;
+
 
           }
 
-          if(al_key_down(&ks, ALLEGRO_KEY_LEFT) && mapa[player->iposicion_player][(player->jposicion_player-1)].mapa_binario != 1){
-
-            player->jposicion_player--;
+          if(al_key_down(&ks, ALLEGRO_KEY_LEFT))          
+          {
+            if(mapa[player->iposicion_player/PIXEL][(player->jposicion_player/PIXEL)-1].mapa_binario != 1)
+              player->jposicion_player-=PASO;
+            else
+              if(colision(player->jposicion_player-PASO,player->iposicion_player,player->jposicion_player-1,player->iposicion_player) != 1)
+                player->jposicion_player-=PASO;
           }
-      /*ARREGLARRR no va pal lado y estoy cansada waah*/
-          if(al_key_down(&ks, ALLEGRO_KEY_RIGHT) && mapa[(player->iposicion_player)][(player->jposicion_player)+1].mapa_binario != 1){
 
-            player->jposicion_player++;
+          if(al_key_down(&ks, ALLEGRO_KEY_RIGHT))
+          {
+            if(mapa[(player->iposicion_player/PIXEL)][(player->jposicion_player/PIXEL)+1].mapa_binario != 1)
+              player->jposicion_player+=PASO;
+            else
+              if(colision(player->jposicion_player+PASO,player->iposicion_player,player->jposicion_player+1,player->iposicion_player) != 1)
+                player->jposicion_player+=PASO;
+    
           }
           if(al_key_down(&ks, ALLEGRO_KEY_ESCAPE)){
             redraw = 2;
@@ -189,10 +217,29 @@ void leer_mapa(mapa mapa[FIL][COL], player *player)
 
       if(mapa[i][j].mapa_char == 'p')
       {
-        player->iposicion_player = i;
-        player->jposicion_player = j;
+        player->iposicion_player = i*PIXEL;
+        player->jposicion_player = j*PIXEL;
       }
     }
   }
+
   return;
+}
+
+//Si coñision es verdadera entonces retorna 1, si es falsa entonces retorna 0
+//ax y ay cuadrado A; bx y by cuadrado B
+int colision(int ax, int ay, int bx, int by)
+{
+  int colision = 0;
+  if(ay < by+PIXEL)
+    colision=1;
+  if(ax < bx+PIXEL)
+    colision=1;
+  if(ay+PIXEL > by)
+    colision=1;
+  if(ax+PIXEL > bx)
+    colision=1;
+    
+    /*me cago en todo lo cagable chavales*/
+  return colision;
 }
